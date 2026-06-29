@@ -16,16 +16,16 @@ foreach ($dirs as $dir) {
     }
 }
 
-// Boot the app and override bootstrap cache path BEFORE public/index.php
+// Load composer autoloader first
+require __DIR__ . '/../vendor/autoload.php';
+
+// Boot the app
 $app = require __DIR__ . '/../bootstrap/app.php';
 
 $app->useStoragePath('/tmp/storage');
-
-// Override bootstrap cache
-$app->instance('path.config', __DIR__ . '/../config');
 $app->useBootstrapPath('/tmp/bootstrap');
 
-// Now handle the request
+// Handle the request
 $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
 $response = $kernel->handle(
     $request = Illuminate\Http\Request::capture()
