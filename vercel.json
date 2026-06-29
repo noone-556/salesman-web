@@ -2,24 +2,16 @@
   "version": 2,
   "framework": null,
   "functions": {
-    "routes": [
-  {
-    "src": "/favicon.ico",
-    "dest": "/public/favicon.ico"
-  },
-  {
-    "src": "/build/(.*)",
-    "dest": "/public/build/$1"
-  },
-  {
-    "src": "/(.*)",
-    "dest": "/api/index.php"
-  }
-]
-
+    "api/index.php": {
+      "runtime": "vercel-php@0.7.4"
+    }
   },
   "outputDirectory": "public",
   "routes": [
+    {
+      "src": "/favicon.ico",
+      "dest": "/public/favicon.ico"
+    },
     {
       "src": "/build/(.*)",
       "dest": "/public/build/$1"
