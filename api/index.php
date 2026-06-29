@@ -1,22 +1,34 @@
 <?php
 
-// Symlink storage to /tmp (writable)
-if (!is_dir('/tmp/storage/logs')) {
-    mkdir('/tmp/storage/logs', 0755, true);
-}
-if (!is_dir('/tmp/storage/framework/cache')) {
-    mkdir('/tmp/storage/framework/cache', 0755, true);
-}
-if (!is_dir('/tmp/storage/framework/sessions')) {
-    mkdir('/tmp/storage/framework/sessions', 0755, true);
-}
-if (!is_dir('/tmp/storage/framework/views')) {
-    mkdir('/tmp/storage/framework/views', 0755, true);
-}
-if (!is_dir('/tmp/bootstrap/cache')) {
-    mkdir('/tmp/bootstrap/cache', 0755, true);
+// Create required /tmp directories
+$dirs = [
+    '/tmp/storage/logs',
+    '/tmp/storage/framework/cache',
+    '/tmp/storage/framework/cache/data',
+    '/tmp/storage/framework/sessions',
+    '/tmp/storage/framework/views',
+    '/tmp/bootstrap/cache',
+];
+
+foreach ($dirs as $dir) {
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
 }
 
-$_ENV['APP_STORAGE'] = '/tmp';
+// Boot the app and override bootstrap cache path BEFORE public/index.php
+$app = require __DIR__ . '/../bootstrap/app.php';
 
-require __DIR__ . '/../public/index.php';
+$app->useStoragePath('/tmp/storage');
+
+// Override bootstrap cache
+$app->instance('path.config', __DIR__ . '/../config');
+$app->useBootstrapPath('/tmp/bootstrap');
+
+// Now handle the request
+$kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+$response = $kernel->handle(
+    $request = Illuminate\Http\Request::capture()
+)->send();
+
+$kernel->terminate($request, $response);
