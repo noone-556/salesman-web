@@ -1,0 +1,49 @@
+.sidebar-link {
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+    background-color: rgba(20, 184, 166, 0.12);
+    color: #0d9488;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-hot { background: #fee2e2; color: #b91c1c; }
+.status-warm { background: #ffedd5; color: #c2410c; }
+.status-cold { background: #e2e8f0; color: #475569; }
+.status-follow_up { background: #fef3c7; color: #b45309; }
+
+.whatsapp-bubble {
+    background: #dcf8c6;
+    border-radius: 0.75rem 0.75rem 0.75rem 0.25rem;
+    position: relative;
+}
+
+.panel-card {
+    background: white;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+@media (max-width: 1024px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .sidebar.open {
+        transform: translateX(0);
+    }
+}
