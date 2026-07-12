@@ -105,13 +105,13 @@
                     <div class="px-5 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
                         <h2 class="font-semibold text-slate-900">Customer List</h2>
                         <div class="flex gap-2">
-                            <input type="search" placeholder="Search customers..." class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 w-40 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                            <select class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                                <option>All Status</option>
-                                <option>Hot</option>
-                                <option>Warm</option>
-                                <option>Follow-up Due</option>
-                                <option>Cold</option>
+                            <input type="search" id="customer-search" placeholder="Search customers..." class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 w-40 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <select id="customer-status-filter" class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <option value="">All Status</option>
+                                <option value="hot">Hot</option>
+                                <option value="warm">Warm</option>
+                                <option value="follow_up">Follow-up Due</option>
+                                <option value="cold">Cold</option>
                             </select>
                         </div>
                     </div>
@@ -126,9 +126,17 @@
                                     <th class="px-5 py-3 font-medium">Last Contact</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-100">
+                            <tbody class="divide-y divide-slate-100" id="customer-table-body">
                                 @foreach ($customers as $customer)
-                                <tr class="hover:bg-slate-50">
+                                <tr
+                                    class="hover:bg-slate-50 customer-row cursor-pointer"
+                                    data-status="{{ $customer['status'] }}"
+                                    data-id="{{ $customer['id'] }}"
+                                    data-name="{{ $customer['name'] }}"
+                                    data-phone="{{ $customer['phone'] }}"
+                                    data-car="{{ $customer['car'] }}"
+                                    data-last-contact="{{ $customer['last_contact'] }}"
+                                >
                                     <td class="px-5 py-3 font-medium">{{ $customer['name'] }}</td>
                                     <td class="px-5 py-3 text-slate-500">{{ $customer['phone'] }}</td>
                                     <td class="px-5 py-3">{{ $customer['car'] }}</td>
@@ -142,8 +150,12 @@
                                 @endforeach
                             </tbody>
                         </table>
+
+                        
                     </div>
                 </section>
+
+                @include('customer-profile')
 
                 {{-- WhatsApp --}}
                 <section id="whatsapp" class="lg:col-span-2 panel-card flex flex-col">
@@ -154,10 +166,20 @@
 
                     <div class="px-5 py-3 space-y-2 flex-1 overflow-y-auto max-h-48">
                         @foreach ($followups as $item)
-                        <div class="flex items-center justify-between p-3 rounded-lg {{ $item['urgent'] ? 'bg-red-50 border border-red-100' : 'bg-slate-50' }}">
-                            <div>
-                                <p class="text-sm font-medium">{{ $item['name'] }}</p>
-                                <p class="text-xs text-slate-500">{{ $item['car'] }}</p>
+                        <div
+                            class="followup-item cursor-pointer flex items-center justify-between p-3 rounded-lg border transition {{ $item['urgent'] ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-transparent' }}"
+                            data-customer-id="{{ $item['customer_id'] }}"
+                            data-name="{{ $item['name'] }}"
+                            data-car="{{ $item['car'] }}"
+                        >
+                            <div class="flex items-center gap-2">
+                                <svg class="selected-check w-4 h-4 text-brand-600 hidden flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                <div>
+                                    <p class="text-sm font-medium">{{ $item['name'] }}</p>
+                                    <p class="text-xs text-slate-500">{{ $item['car'] }}</p>
+                                </div>
                             </div>
                             <span class="text-xs font-medium {{ $item['urgent'] ? 'text-red-600' : 'text-amber-600' }}">{{ $item['due'] }}</span>
                         </div>
@@ -171,6 +193,7 @@
                             <button
                                 type="button"
                                 class="template-btn text-xs px-3 py-1.5 rounded-full border border-slate-200 hover:border-brand-500 hover:text-brand-600 transition"
+                                data-key="{{ $template['id'] }}"
                                 data-message="{{ $template['message'] }}"
                             >{{ $template['label'] }}</button>
                             @endforeach
@@ -180,20 +203,38 @@
                     <div class="px-5 py-4 border-t border-slate-100">
                         <p class="text-xs font-medium text-slate-500 mb-2">Message Preview</p>
                         <div class="whatsapp-bubble p-3 text-sm text-slate-800" id="whatsapp-preview">
-                            Hi Ahmad! Good news — the Perodua Myvi you enquired about now has a special price. Interested to view this weekend?
+                            Select a follow-up and a template to preview the message.
                         </div>
-                        <button type="button" class="mt-3 w-full bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2.5 rounded-lg transition">
-                            Send Reminder
-                        </button>
+
+                        <!-- <form action="{{ route('messages.send') }}" method="POST" id="send-form"> -->
+                            
+                            <input type="hidden" name="customer_id" id="input-customer-id">
+                            <input type="hidden" name="template_key" id="input-template-key">
+                            <button
+                                type="button"
+                                id="send-btn"
+                                class="mt-3 w-full bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2.5 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                disabled
+                            >
+                                <span id="send-btn-text">Send Reminder</span>
+                            </button>
+                        <!-- </form> -->
                     </div>
                 </section>
+            </div>
+
+            {{-- Toast container --}}
+            <div id="toast" class="fixed bottom-6 right-6 z-50 opacity-0 invisible transition-all duration-300" style="transform: translateY(1rem);">
+                <div id="toast-inner" class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white flex items-center gap-2">
+                    <span id="toast-message"></span>
+                </div>
             </div>
 
             {{-- Caption + Loan row --}}
             <div class="grid lg:grid-cols-2 gap-6">
 
                 {{-- Caption Generator --}}
-                <section id="caption" class="panel-card">
+                <!-- <section id="caption" class="panel-card">
                     <div class="px-5 py-4 border-b border-slate-100">
                         <h2 class="font-semibold text-slate-900">Listing Caption Generator</h2>
                         <p class="text-xs text-slate-500 mt-0.5">Generate social media & marketplace listings</p>
@@ -238,6 +279,18 @@
                             <button type="button" id="cap-copy" class="px-4 border border-slate-200 hover:bg-slate-50 text-sm font-medium py-2.5 rounded-lg transition">Copy</button>
                         </div>
                     </div>
+                </section> -->
+
+                <section id="caption" class="panel-card">
+                    <div class="px-5 py-4 border-b border-slate-100">
+                        <h2 class="font-semibold text-slate-900">Listing Caption Generator</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Generate social media & marketplace listings</p>
+                    </div>
+                    <div class="p-5 flex flex-col items-center justify-center text-center py-16">
+                        <img src="https://media.giphy.com/media/YOUR_GIF_ID/giphy.gif" alt="Coming soon" class="w-35 h-35 mb-4 rounded-lg object-cover">
+                        <h3 class="font-semibold text-slate-900">Coming Soon</h3>
+                        <p class="text-xs text-slate-500 mt-1 max-w-xs">We're working on this feature. Check back soon!</p>
+                    </div>
                 </section>
 
                 {{-- Loan & Quotation --}}
@@ -246,7 +299,7 @@
                         <h2 class="font-semibold text-slate-900">Loan Calculator & Quotation</h2>
                         <p class="text-xs text-slate-500 mt-0.5">Calculate installment & preview quotation</p>
                     </div>
-                    <div class="p-5 space-y-4">
+                    <!-- <div class="p-5 space-y-4">
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="text-xs font-medium text-slate-600">Car Price (RM)</label>
@@ -308,7 +361,13 @@
                         <div class="flex gap-2">
                             <button type="button" class="flex-1 border border-slate-200 hover:bg-slate-50 text-sm font-medium py-2.5 rounded-lg transition">Export PDF</button>
                             <button type="button" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2.5 rounded-lg transition">Send to Customer</button>
-                        </div>
+                        </div> -->
+
+                        <div class="p-5 flex flex-col items-center justify-center text-center py-16">
+                        <img src="https://media.giphy.com/media/YOUR_GIF_ID/giphy.gif" alt="Coming soon" class="w-35 h-35 mb-4 rounded-lg object-cover">
+                        <h3 class="font-semibold text-slate-900">Coming Soon</h3>
+                        <p class="text-xs text-slate-500 mt-1 max-w-xs">We're working on this feature. Check back soon!</p>
+                    </div>
                     </div>
                 </section>
             </div>
@@ -320,4 +379,172 @@
 
 @push('scripts')
 <script src="{{ asset('js/dashboard.js') }}"></script>
+
+<!-- whatsapp followup script -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    let selectedCustomer = null;
+    let selectedTemplate = null;
+
+    const preview = document.getElementById('whatsapp-preview');
+    const sendBtn = document.getElementById('send-btn');
+    const sendBtnText = document.getElementById('send-btn-text');
+    const toast = document.getElementById('toast');
+    const toastInner = document.getElementById('toast-inner');
+    const toastMessage = document.getElementById('toast-message');
+
+    function updatePreview() {
+        if (!selectedCustomer || !selectedTemplate) {
+            preview.textContent = 'Select a follow-up and a template to preview the message.';
+            sendBtn.disabled = true;
+            return;
+        }
+
+        let message = selectedTemplate.message
+            .replace(/@{{\s*name\s*}}/g, selectedCustomer.name)
+            .replace(/@{{\s*car\s*}}/g, selectedCustomer.car);
+
+        preview.textContent = message;
+        sendBtn.disabled = false;
+    }
+
+    function showToast(message, success) {
+        toastMessage.textContent = message;
+
+        toastInner.className =
+            'px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white flex items-center gap-2 ' +
+            (success ? 'bg-emerald-600' : 'bg-red-600');
+
+        toast.style.opacity = '1';
+        toast.style.visibility = 'visible';
+        toast.style.transform = 'translateY(0)';
+
+        clearTimeout(window.toastTimer);
+        window.toastTimer = setTimeout(function () {
+            toast.style.opacity = '0';
+            // toast.style.visibility = 'hidden';
+            toast.style.transform = 'translateY(1rem)';
+        }, 3000);
+    }
+
+    document.querySelectorAll('.followup-item').forEach(function (el) {
+        el.addEventListener('click', function () {
+            document.querySelectorAll('.followup-item').forEach(i => {
+                i.classList.remove('ring-2', 'ring-brand-500', 'border-brand-400');
+                i.querySelector('.selected-check')?.classList.add('hidden');
+            });
+
+            el.classList.add('ring-2', 'ring-brand-500', 'border-brand-400');
+            el.querySelector('.selected-check')?.classList.remove('hidden');
+
+            selectedCustomer = {
+                id: el.dataset.customerId,
+                name: el.dataset.name,
+                car: el.dataset.car,
+            };
+
+            updatePreview();
+        });
+    });
+
+    document.querySelectorAll('.template-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('bg-brand-50', 'border-brand-500', 'text-brand-600'));
+            btn.classList.add('bg-brand-50', 'border-brand-500', 'text-brand-600');
+
+            selectedTemplate = {
+                key: btn.dataset.key,
+                message: btn.dataset.message,
+            };
+
+            updatePreview();
+        });
+    });
+
+    sendBtn.addEventListener('click', function () {
+        if (!selectedCustomer || !selectedTemplate) return;
+
+        sendBtn.disabled = true;
+        sendBtnText.textContent = 'Sending...';
+
+        
+
+        fetch("{{ route('messages.send') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                customer_id: selectedCustomer.id,
+                template_key: selectedTemplate.key,
+            }),
+        })
+        .then(function (response) {
+            return response.json().then(function (data) {
+                return { status: response.status, data: data };
+            });
+        })
+        .then(function ({ status, data }) {
+            console.log('data success:', data.success);
+            showToast(data.message, data.success);
+        })
+        .catch(function () {
+            showToast('Something went wrong. Please try again.', false);
+        })
+        .finally(function () {
+            sendBtn.disabled = false;
+            console.log('Sending message to customer ID:', selectedCustomer.id, 'with template key:', selectedTemplate.key);
+            sendBtnText.textContent = 'Send Reminder';
+        });
+    });
+});
+
+    // Customer profile modal
+    const customerModal = document.getElementById('customer-modal');
+    const modalClose = document.getElementById('modal-close');
+    // const modalAvatar = document.getElementById('modal-avatar');
+    const modalName = document.getElementById('modal-name');
+    const modalStatus = document.getElementById('modal-status');
+    const modalPhone = document.getElementById('modal-phone');
+    const modalCar = document.getElementById('modal-car');
+    const modalLastContact = document.getElementById('modal-last-contact');
+
+    function openCustomerModal(row) {
+        const name = row.dataset.name;
+        const status = row.dataset.status;
+
+        // modalAvatar.textContent = name.charAt(0).toUpperCase();
+        modalName.textContent = name;
+        modalPhone.textContent = row.dataset.phone;
+        modalCar.textContent = row.dataset.car;
+        modalLastContact.textContent = row.dataset.lastContact;
+
+        modalStatus.textContent = status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+        modalStatus.className = 'status-badge status-' + status;
+
+        customerModal.classList.remove('hidden');
+        customerModal.classList.add('flex');
+    }
+
+    function closeCustomerModal() {
+        customerModal.classList.add('hidden');
+        customerModal.classList.remove('flex');
+    }
+
+    document.querySelectorAll('.customer-row').forEach(function (row) {
+        row.addEventListener('click', function () {
+            openCustomerModal(row);
+        });
+    });
+
+    modalClose.addEventListener('click', closeCustomerModal);
+
+    customerModal.addEventListener('click', function (e) {
+        if (e.target === customerModal) closeCustomerModal(); // click outside the box closes it
+    });
+</script>
+
+
 @endpush

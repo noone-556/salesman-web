@@ -20,6 +20,37 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Customer search & status filter
+    const customerSearch = document.getElementById('customer-search');
+    const customerStatusFilter = document.getElementById('customer-status-filter');
+    const customerRows = document.querySelectorAll('.customer-row');
+
+    function filterCustomers() {
+        const query = (customerSearch?.value || '').toLowerCase().trim();
+        const status = customerStatusFilter?.value || '';
+
+        customerRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const rowStatus = row.dataset.status;
+
+            const matchesSearch = text.includes(query);
+            const matchesStatus = !status || rowStatus === status;
+
+            row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+        });
+    }
+
+    if (customerSearch) {
+        customerSearch.addEventListener('input', filterCustomers);
+    }
+
+    if (customerStatusFilter) {
+        customerStatusFilter.addEventListener('change', filterCustomers);
+    }
+
+
+
+
     // WhatsApp template buttons
     const preview = document.getElementById('whatsapp-preview');
     document.querySelectorAll('.template-btn').forEach(btn => {

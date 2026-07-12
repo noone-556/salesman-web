@@ -2,37 +2,75 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
+use App\Models\Followup;
+use App\Models\MessageTemplate;
+use Illuminate\Http\Request;
+// use Illuminate\Support\Facades\Auth;
+
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        // TODO: replace with Auth::id() once auth is implemented
+        // $userId = Auth::id();
+        $userId = 1; // hardcoded for now — matches seeded test user
+
         return view('dashboard', [
             'stats' => [
-                'followups_due' => 12,
-                'active_leads' => 47,
-                'cars_listed' => 8,
-                'pipeline' => '2.4M',
+                'followups_due' => Followup::where('user_id', $userId)->due()->count(),
+                'active_leads' => Customer::where('user_id', $userId)->active()->count(),
+                'cars_listed' => 8, // placeholder — see note below
+                'pipeline' => '2.4M', // placeholder — see note below
             ],
-            'customers' => [
-                ['name' => 'Ahmad Zaki', 'phone' => '012-345 6789', 'car' => 'Perodua Myvi 1.5 AV', 'status' => 'hot', 'last_contact' => 'Today'],
-                ['name' => 'Siti Nurhaliza', 'phone' => '019-876 5432', 'car' => 'Honda City RS', 'status' => 'warm', 'last_contact' => 'Yesterday'],
-                ['name' => 'Raj Kumar', 'phone' => '016-234 5678', 'car' => 'Proton X50 Premium', 'status' => 'follow_up', 'last_contact' => '3 days ago'],
-                ['name' => 'Lim Wei Jie', 'phone' => '011-567 8901', 'car' => 'Toyota Vios GR-S', 'status' => 'cold', 'last_contact' => '1 week ago'],
-                ['name' => 'Farah Aina', 'phone' => '013-890 1234', 'car' => 'Mazda CX-5', 'status' => 'hot', 'last_contact' => 'Today'],
-                ['name' => 'Muhammad Hafiz', 'phone' => '017-456 7890', 'car' => 'Honda HR-V RS', 'status' => 'warm', 'last_contact' => '2 days ago'],
-            ],
-            'followups' => [
-                ['name' => 'Raj Kumar', 'car' => 'Proton X50', 'due' => 'Overdue 2 days', 'urgent' => true],
-                ['name' => 'Lim Wei Jie', 'car' => 'Toyota Vios', 'due' => 'Due today', 'urgent' => false],
-                ['name' => 'Nurul Izzati', 'car' => 'Perodua Bezza', 'due' => 'Due today', 'urgent' => false],
-                ['name' => 'Tan Mei Ling', 'car' => 'Honda Civic', 'due' => 'Due tomorrow', 'urgent' => false],
-            ],
-            'templates' => [
-                ['id' => 'price_drop', 'label' => 'Price Drop Alert', 'message' => "Hi {{name}}! Good news — the {{car}} you enquired about now has a special price. Interested to view this weekend?"],
-                ['id' => 'test_drive', 'label' => 'Test Drive Reminder', 'message' => "Hi {{name}}, just checking in on your test drive for the {{car}}. Still free this Saturday?"],
-                ['id' => 'loan_approved', 'label' => 'Loan Approved', 'message' => "Hi {{name}}! Your loan for the {{car}} has been approved. Let's proceed with booking — reply YES to confirm."],
-                ['id' => 'still_interested', 'label' => 'Still Interested?', 'message' => "Hi {{name}}, hope you're well! Are you still looking for a {{car}}? I have new units available."],
-            ],
+
+            'customers' => Customer::where('user_id', $userId)
+                ->latest('last_contact_at')
+                ->get()
+                ->map(fn ($customer) => [
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'phone' => $customer->phone,
+                    'car' => $customer->car,
+                    'status' => $customer->status,
+                    'last_contact' => $customer->last_contact_at?->diffForHumans() ?? 'Never',
+                ]),
+
+            'followups' => Followup::where('user_id', $userId)
+                ->with('customer')
+                ->orderBy('due_date')
+                ->get()
+                ->map(fn ($followup) => [
+                    'customer_id' => $followup->customer_id,
+                    'name' => $followup->customer->name,
+                    'car' => $followup->car,
+                    'due' => $this->formatDueDate($followup->due_date, $followup->urgent),
+                    'urgent' => $followup->urgent,
+                ]),
+
+            'templates' => MessageTemplate::where('user_id', $userId)
+                ->orWhereNull('user_id') // include global defaults
+                ->get()
+                ->map(fn ($template) => [
+                    'id' => $template->key,
+                    'label' => $template->label,
+                    'message' => $template->message,
+                ]),
         ]);
+    }
+
+    private function formatDueDate($dueDate, $urgent): string
+    {
+        $days = now()->startOfDay()->diffInDays($dueDate, false);
+
+        if ($days < 0) {
+            return 'Overdue ' . abs($days) . ' day' . (abs($days) > 1 ? 's' : '');
+        }
+
+        return match ($days) {
+            0 => 'Due today',
+            1 => 'Due tomorrow',
+            default => 'Due in ' . $days . ' days',
+        };
     }
 }
