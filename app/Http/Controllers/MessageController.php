@@ -26,13 +26,13 @@ class MessageController extends Controller
 
         try {
             //cap at 5 message daily
-            // $whatsapp->send($customer->phone, $message);
+            $whatsapp->send($customer->phone, $message);
 
             // For now, just log the message instead of sending it
-            \Log::info('Would send WhatsApp message', [
-                'to' => $customer->phone,
-                'message' => $message,
-            ]);
+            // \Log::info('Would send WhatsApp message', [
+            //     'to' => $customer->phone,
+            //     'message' => $message,
+            // ]);
 
 
             return response()->json([
