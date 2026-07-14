@@ -11,7 +11,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         User::create([
-            'id' => 2, // explicit, so foreign keys elsewhere match reliably
+            'id' => 1, // explicit, so foreign keys elsewhere match reliably
             'name' => 'Test Salesperson',
             'email' => 'test@auto2close.local',
             'password' => Hash::make('password'),
